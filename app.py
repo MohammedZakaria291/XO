@@ -1,9 +1,8 @@
 import streamlit as st
 import math
 
-# App title
+# App title and description
 st.title("🎮 Tic-Tac-Toe (XO)")
-
 st.markdown("**You play as X** | **Computer plays as O**")
 st.markdown("The computer is unbeatable (it will always win or draw) thanks to the Minimax algorithm with Alpha-Beta Pruning.")
 
@@ -14,26 +13,6 @@ if 'game_over' not in st.session_state:
     st.session_state.game_over = False
 if 'winner' not in st.session_state:
     st.session_state.winner = None
-
-# Function to display the board as buttons
-def display_board():
-    cols = st.columns(3)
-    for i in range(9):
-        with cols[i % 3]:
-            if st.session_state.board[i] == " " and not st.session_state.game_over:
-                if st.button(
-                    " " if st.session_state.board[i] == " " else st.session_state.board[i],
-                    key=f"btn_{i}",
-                    use_container_width=True
-                ):
-                    make_move(i)
-            else:
-                st.button(
-                    " " if st.session_state.board[i] == " " else st.session_state.board[i],
-                    key=f"btn_{i}",
-                    disabled=True,
-                    use_container_width=True
-                )
 
 # Check for a winner
 def check_winner(board, player):
@@ -60,7 +39,7 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
     if check_draw(board):
         return 0
 
-    if maximizingPlayer:  # Computer's turn (O)
+    if maximizingPlayer:  # Computer (O)
         max_eval = -math.inf
         for i in range(9):
             if board[i] == " ":
@@ -72,7 +51,7 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
                 if beta <= alpha:
                     break
         return max_eval
-    else:  # Player's turn (X)
+    else:  # Player (X)
         min_eval = math.inf
         for i in range(9):
             if board[i] == " ":
@@ -85,7 +64,7 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
                     break
         return min_eval
 
-# Best move for the computer
+# Computer's best move
 def computer_move():
     best_score = -math.inf
     best_move = None
@@ -105,27 +84,46 @@ def make_move(pos):
     if st.session_state.board[pos] == " " and not st.session_state.game_over:
         st.session_state.board[pos] = "X"
         
+        # Check if player won
         if check_winner(st.session_state.board, "X"):
             st.session_state.game_over = True
             st.session_state.winner = "Congratulations! You won! 🎉"
+        # Check for draw
         elif check_draw(st.session_state.board):
             st.session_state.game_over = True
             st.session_state.winner = "It's a draw! 😐"
         else:
-            # Computer's turn
-            with st.spinner("Computer is thinking..."):
+            # Computer's turn with loading spinner
+            with st.spinner("Computer is thinking... 💭"):
                 computer_move()
+            
+            # Re-check after computer's move
             if check_winner(st.session_state.board, "O"):
                 st.session_state.game_over = True
                 st.session_state.winner = "Computer wins! 😢"
             elif check_draw(st.session_state.board):
                 st.session_state.game_over = True
                 st.session_state.winner = "It's a draw! 😐"
+            
+            # Force rerun to update the board immediately
+            st.rerun()
 
 # Display the board
-display_board()
+cols = st.columns(3)
+for i in range(9):
+    with cols[i % 3]:
+        cell_value = st.session_state.board[i]
+        if cell_value == " " and not st.session_state.game_over:
+            if st.button(" ", key=f"btn_{i}", use_container_width=True):
+                make_move(i)
+        else:
+            # Display X or O (larger and centered)
+            label = f"# {cell_value}" if cell_value != " " else " "
+            st.markdown(f"<div style='text-align: center; font-size: 60px; height: 100px; line-height: 100px;'>{cell_value}</div>", unsafe_allow_html=True)
+            # Disabled button to maintain grid alignment
+            st.button(label, key=f"disabled_{i}", disabled=True, use_container_width=True)
 
-# Show result if game is over
+# Game result
 if st.session_state.game_over:
     st.success(f"### {st.session_state.winner}")
     if st.button("Play Again"):
@@ -137,10 +135,10 @@ else:
     st.markdown("---")
     st.caption("Click on any empty cell to make your move.")
 
-# Sidebar info
+# Sidebar
 with st.sidebar:
     st.header("Game Info")
     st.write("- You: **X**")
     st.write("- Computer: **O**")
     st.write("- Algorithm: Minimax + Alpha-Beta Pruning")
-    st.write("- The computer is unbeatable!")
+    st.write("- The computer is **unbeatable**!")
