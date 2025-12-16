@@ -1,45 +1,41 @@
 import streamlit as st
 import math
 
-# Add custom CSS to make the board responsive and larger on mobile
+# Custom CSS لتحسين الشكل وجعل الـ X و O تظهر داخل المربع نفسه بشكل مثالي
 st.markdown("""
 <style>
-    /* Center the board and make it responsive */
-    div[data-testid="column"]:has(> div > div > button[kind="secondary"]) {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    
-    /* Style the buttons to be square, larger, and touch-friendly */
-    button[kind="secondary"] {
+    /* جعل الأزرار مربعة تمامًا وكبيرة */
+    div[data-testid="column"] button[kind="secondary"] {
         width: 100% !important;
         height: auto !important;
         aspect-ratio: 1 / 1 !important;
-        font-size: 4rem !important;  /* Large X/O */
+        font-size: 4.5rem !important;
+        font-weight: bold !important;
         padding: 0 !important;
-        margin: 5px 0 !important;
+        margin: 8px 0 !important;
+        border: 3px solid #cccccc !important;
+        border-radius: 12px !important;
+        background-color: #f9f9f9 !important;
     }
-    
-    /* Make the grid container responsive */
+
+    /* عند الضغط أو بعد الاختيار */
+    div[data-testid="column"] button[kind="secondary"]:disabled {
+        background-color: #f0f0f0 !important;
+        opacity: 1 !important;
+    }
+
+    /* مركز الـ board */
     div[data-testid="stHorizontalBlock"] {
         max-width: 90vw !important;
-        margin: 0 auto !important;
+        margin: 20px auto !important;
     }
-    
-    /* Larger text for displayed X/O */
-    div[style*="font-size: 60px"] {
-        font-size: 4rem !important;
-    }
-    
-    /* Media query for smaller screens (mobile) */
+
+    /* تحسين على الموبايل */
     @media (max-width: 768px) {
-        button[kind="secondary"] {
-            font-size: 3.5rem !important;
-            margin: 8px 0 !important;
-        }
-        div[style*="font-size: 60px"] {
-            font-size: 3.5rem !important;
+        div[data-testid="column"] button[kind="secondary"] {
+            font-size: 3.8rem !important;
+            margin: 10px 0 !important;
+            border-width: 4px !important;
         }
     }
 </style>
@@ -47,8 +43,8 @@ st.markdown("""
 
 # App title and description
 st.title("🎮 Tic-Tac-Toe (XO)")
-st.markdown("**You play as X** | **Computer plays as O**")
-st.markdown("The computer is unbeatable (it will always win or draw) thanks to the Minimax algorithm with Alpha-Beta Pruning.")
+st.markdown("**أنت تلعب كـ X** | **الكمبيوتر يلعب كـ O**")
+st.markdown("الكمبيوتر لا يُهزم أبدًا (دائمًا فوز أو تعادل) بفضل خوارزمية Minimax مع Alpha-Beta Pruning.")
 
 # Initialize session state
 if 'board' not in st.session_state:
@@ -127,60 +123,54 @@ def make_move(pos):
     if st.session_state.board[pos] == " " and not st.session_state.game_over:
         st.session_state.board[pos] = "X"
        
-        # Check if player won
         if check_winner(st.session_state.board, "X"):
             st.session_state.game_over = True
-            st.session_state.winner = "Congratulations! You won! 🎉"
-        # Check for draw
+            st.session_state.winner = "مبروك! لقد فزت! 🎉"
         elif check_draw(st.session_state.board):
             st.session_state.game_over = True
-            st.session_state.winner = "It's a draw! 😐"
+            st.session_state.winner = "تعادل! 😐"
         else:
-            # Computer's turn with loading spinner
-            with st.spinner("Computer is thinking... 💭"):
+            with st.spinner("الكمبيوتر يفكر... 💭"):
                 computer_move()
            
-            # Re-check after computer's move
             if check_winner(st.session_state.board, "O"):
                 st.session_state.game_over = True
-                st.session_state.winner = "Computer wins! 😢"
+                st.session_state.winner = "الكمبيوتر فاز! 😢"
             elif check_draw(st.session_state.board):
                 st.session_state.game_over = True
-                st.session_state.winner = "It's a draw! 😐"
+                st.session_state.winner = "تعادل! 😐"
            
-            # Force rerun to update the board immediately
             st.rerun()
 
-# Display the board with 3 columns
+# عرض اللوحة باستخدام أزرار فقط (الـ X و O تكتب داخل الزر نفسه)
 cols = st.columns(3)
 for i in range(9):
     with cols[i % 3]:
         cell_value = st.session_state.board[i]
         if cell_value == " " and not st.session_state.game_over:
+            # زر فارغ قابل للضغط
             if st.button(" ", key=f"btn_{i}", use_container_width=True):
                 make_move(i)
         else:
-            # Display X or O centered and large
-            st.markdown(f"<div style='text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;'>{cell_value}</div>", unsafe_allow_html=True)
-            # Disabled button to maintain grid alignment
-            st.button(cell_value or " ", key=f"disabled_{i}", disabled=True, use_container_width=True)
+            # زر معطل يعرض X أو O داخل الزر مباشرة
+            st.button(cell_value, key=f"cell_{i}", disabled=True, use_container_width=True)
 
-# Game result
+# نتيجة اللعبة
 if st.session_state.game_over:
     st.success(f"### {st.session_state.winner}")
-    if st.button("Play Again"):
+    if st.button("العب مرة أخرى"):
         st.session_state.board = [" " for _ in range(9)]
         st.session_state.game_over = False
         st.session_state.winner = None
         st.rerun()
 else:
     st.markdown("---")
-    st.caption("Click on any empty cell to make your move.")
+    st.caption("اضغط على أي خلية فارغة لتحركك.")
 
 # Sidebar
 with st.sidebar:
-    st.header("Game Info")
-    st.write("- You: **X**")
-    st.write("- Computer: **O**")
-    st.write("- Algorithm: Minimax + Alpha-Beta Pruning")
-    st.write("- The computer is **unbeatable**!")
+    st.header("معلومات اللعبة")
+    st.write("- أنت: **X**")
+    st.write("- الكمبيوتر: **O**")
+    st.write("- الخوارزمية: Minimax + Alpha-Beta Pruning")
+    st.write("- الكمبيوتر **لا يُهزم**!")
