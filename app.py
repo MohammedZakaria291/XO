@@ -1,6 +1,50 @@
 import streamlit as st
 import math
 
+# Add custom CSS to make the board responsive and larger on mobile
+st.markdown("""
+<style>
+    /* Center the board and make it responsive */
+    div[data-testid="column"]:has(> div > div > button[kind="secondary"]) {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    /* Style the buttons to be square, larger, and touch-friendly */
+    button[kind="secondary"] {
+        width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 1 / 1 !important;
+        font-size: 4rem !important;  /* Large X/O */
+        padding: 0 !important;
+        margin: 5px 0 !important;
+    }
+    
+    /* Make the grid container responsive */
+    div[data-testid="stHorizontalBlock"] {
+        max-width: 90vw !important;
+        margin: 0 auto !important;
+    }
+    
+    /* Larger text for displayed X/O */
+    div[style*="font-size: 60px"] {
+        font-size: 4rem !important;
+    }
+    
+    /* Media query for smaller screens (mobile) */
+    @media (max-width: 768px) {
+        button[kind="secondary"] {
+            font-size: 3.5rem !important;
+            margin: 8px 0 !important;
+        }
+        div[style*="font-size: 60px"] {
+            font-size: 3.5rem !important;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # App title and description
 st.title("🎮 Tic-Tac-Toe (XO)")
 st.markdown("**You play as X** | **Computer plays as O**")
@@ -17,9 +61,9 @@ if 'winner' not in st.session_state:
 # Check for a winner
 def check_winner(board, player):
     win_conditions = [
-        [0,1,2], [3,4,5], [6,7,8],  # Rows
-        [0,3,6], [1,4,7], [2,5,8],  # Columns
-        [0,4,8], [2,4,6]            # Diagonals
+        [0,1,2], [3,4,5], [6,7,8], # Rows
+        [0,3,6], [1,4,7], [2,5,8], # Columns
+        [0,4,8], [2,4,6] # Diagonals
     ]
     for cond in win_conditions:
         if board[cond[0]] == board[cond[1]] == board[cond[2]] == player:
@@ -38,8 +82,7 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
         return depth - 10
     if check_draw(board):
         return 0
-
-    if maximizingPlayer:  # Computer (O)
+    if maximizingPlayer: # Computer (O)
         max_eval = -math.inf
         for i in range(9):
             if board[i] == " ":
@@ -51,7 +94,7 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
                 if beta <= alpha:
                     break
         return max_eval
-    else:  # Player (X)
+    else: # Player (X)
         min_eval = math.inf
         for i in range(9):
             if board[i] == " ":
@@ -83,7 +126,7 @@ def computer_move():
 def make_move(pos):
     if st.session_state.board[pos] == " " and not st.session_state.game_over:
         st.session_state.board[pos] = "X"
-        
+       
         # Check if player won
         if check_winner(st.session_state.board, "X"):
             st.session_state.game_over = True
@@ -96,7 +139,7 @@ def make_move(pos):
             # Computer's turn with loading spinner
             with st.spinner("Computer is thinking... 💭"):
                 computer_move()
-            
+           
             # Re-check after computer's move
             if check_winner(st.session_state.board, "O"):
                 st.session_state.game_over = True
@@ -104,11 +147,11 @@ def make_move(pos):
             elif check_draw(st.session_state.board):
                 st.session_state.game_over = True
                 st.session_state.winner = "It's a draw! 😐"
-            
+           
             # Force rerun to update the board immediately
             st.rerun()
 
-# Display the board
+# Display the board with 3 columns
 cols = st.columns(3)
 for i in range(9):
     with cols[i % 3]:
@@ -117,11 +160,10 @@ for i in range(9):
             if st.button(" ", key=f"btn_{i}", use_container_width=True):
                 make_move(i)
         else:
-            # Display X or O (larger and centered)
-            label = f"# {cell_value}" if cell_value != " " else " "
-            st.markdown(f"<div style='text-align: center; font-size: 60px; height: 100px; line-height: 100px;'>{cell_value}</div>", unsafe_allow_html=True)
+            # Display X or O centered and large
+            st.markdown(f"<div style='text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;'>{cell_value}</div>", unsafe_allow_html=True)
             # Disabled button to maintain grid alignment
-            st.button(label, key=f"disabled_{i}", disabled=True, use_container_width=True)
+            st.button(cell_value or " ", key=f"disabled_{i}", disabled=True, use_container_width=True)
 
 # Game result
 if st.session_state.game_over:
