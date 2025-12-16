@@ -1,10 +1,10 @@
 import streamlit as st
 import math
 
-# Custom CSS لتحسين الشكل وجعل الـ X و O تظهر داخل المربع نفسه بشكل مثالي
+# Custom CSS to make buttons square, large, and display X/O perfectly inside
 st.markdown("""
 <style>
-    /* جعل الأزرار مربعة تمامًا وكبيرة */
+    /* Make buttons perfectly square and large */
     div[data-testid="column"] button[kind="secondary"] {
         width: 100% !important;
         height: auto !important;
@@ -18,19 +18,19 @@ st.markdown("""
         background-color: #f9f9f9 !important;
     }
 
-    /* عند الضغط أو بعد الاختيار */
+    /* Style for disabled buttons (after selection) */
     div[data-testid="column"] button[kind="secondary"]:disabled {
         background-color: #f0f0f0 !important;
         opacity: 1 !important;
     }
 
-    /* مركز الـ board */
+    /* Center the board */
     div[data-testid="stHorizontalBlock"] {
         max-width: 90vw !important;
         margin: 20px auto !important;
     }
 
-    /* تحسين على الموبايل */
+    /* Mobile optimizations */
     @media (max-width: 768px) {
         div[data-testid="column"] button[kind="secondary"] {
             font-size: 3.8rem !important;
@@ -43,8 +43,8 @@ st.markdown("""
 
 # App title and description
 st.title("🎮 Tic-Tac-Toe (XO)")
-st.markdown("**أنت تلعب كـ X** | **الكمبيوتر يلعب كـ O**")
-st.markdown("الكمبيوتر لا يُهزم أبدًا (دائمًا فوز أو تعادل) بفضل خوارزمية Minimax مع Alpha-Beta Pruning.")
+st.markdown("**You play as X** | **Computer plays as O**")
+st.markdown("The computer is unbeatable (it will always win or draw) thanks to the Minimax algorithm with Alpha-Beta Pruning.")
 
 # Initialize session state
 if 'board' not in st.session_state:
@@ -125,52 +125,52 @@ def make_move(pos):
        
         if check_winner(st.session_state.board, "X"):
             st.session_state.game_over = True
-            st.session_state.winner = "مبروك! لقد فزت! 🎉"
+            st.session_state.winner = "Congratulations! You won! 🎉"
         elif check_draw(st.session_state.board):
             st.session_state.game_over = True
-            st.session_state.winner = "تعادل! 😐"
+            st.session_state.winner = "It's a draw! 😐"
         else:
-            with st.spinner("الكمبيوتر يفكر... 💭"):
+            with st.spinner("Computer is thinking... 💭"):
                 computer_move()
            
             if check_winner(st.session_state.board, "O"):
                 st.session_state.game_over = True
-                st.session_state.winner = "الكمبيوتر فاز! 😢"
+                st.session_state.winner = "Computer wins! 😢"
             elif check_draw(st.session_state.board):
                 st.session_state.game_over = True
-                st.session_state.winner = "تعادل! 😐"
+                st.session_state.winner = "It's a draw! 😐"
            
             st.rerun()
 
-# عرض اللوحة باستخدام أزرار فقط (الـ X و O تكتب داخل الزر نفسه)
+# Display the board using buttons only (X and O appear directly inside the button)
 cols = st.columns(3)
 for i in range(9):
     with cols[i % 3]:
         cell_value = st.session_state.board[i]
         if cell_value == " " and not st.session_state.game_over:
-            # زر فارغ قابل للضغط
+            # Empty clickable button
             if st.button(" ", key=f"btn_{i}", use_container_width=True):
                 make_move(i)
         else:
-            # زر معطل يعرض X أو O داخل الزر مباشرة
+            # Disabled button showing X or O directly inside it
             st.button(cell_value, key=f"cell_{i}", disabled=True, use_container_width=True)
 
-# نتيجة اللعبة
+# Game result
 if st.session_state.game_over:
     st.success(f"### {st.session_state.winner}")
-    if st.button("العب مرة أخرى"):
+    if st.button("Play Again"):
         st.session_state.board = [" " for _ in range(9)]
         st.session_state.game_over = False
         st.session_state.winner = None
         st.rerun()
 else:
     st.markdown("---")
-    st.caption("اضغط على أي خلية فارغة لتحركك.")
+    st.caption("Click on any empty cell to make your move.")
 
 # Sidebar
 with st.sidebar:
-    st.header("معلومات اللعبة")
-    st.write("- أنت: **X**")
-    st.write("- الكمبيوتر: **O**")
-    st.write("- الخوارزمية: Minimax + Alpha-Beta Pruning")
-    st.write("- الكمبيوتر **لا يُهزم**!")
+    st.header("Game Info")
+    st.write("- You: **X**")
+    st.write("- Computer: **O**")
+    st.write("- Algorithm: Minimax + Alpha-Beta Pruning")
+    st.write("- The computer is **unbeatable**!")
