@@ -1,10 +1,10 @@
 import streamlit as st
 import math
+import random
 
-# Custom CSS to make buttons square, large, and display X/O perfectly inside
+# Custom CSS
 st.markdown("""
 <style>
-    /* Make buttons perfectly square and large */
     div[data-testid="column"] button[kind="secondary"] {
         width: 100% !important;
         height: auto !important;
@@ -17,20 +17,14 @@ st.markdown("""
         border-radius: 12px !important;
         background-color: #f9f9f9 !important;
     }
-
-    /* Style for disabled buttons (after selection) */
     div[data-testid="column"] button[kind="secondary"]:disabled {
         background-color: #f0f0f0 !important;
         opacity: 1 !important;
     }
-
-    /* Center the board */
     div[data-testid="stHorizontalBlock"] {
         max-width: 90vw !important;
         margin: 20px auto !important;
     }
-
-    /* Mobile optimizations */
     @media (max-width: 768px) {
         div[data-testid="column"] button[kind="secondary"] {
             font-size: 3.8rem !important;
@@ -41,10 +35,18 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# App title and description
 st.title("🎮 Tic-Tac-Toe (XO)")
+
+# Difficulty selection
+st.markdown("### Choose Computer Difficulty")
+difficulty = st.radio(
+    "Select how smart the computer should be:",
+    options=["Random (Easy)", "Greedy (Medium)", "Minimax (Unbeatable)"],
+    index=2,  # Default to Unbeatable
+    horizontal=True
+)
+
 st.markdown("**You play as X** | **Computer plays as O**")
-st.markdown("The computer is unbeatable (it will always win or draw) thanks to the Minimax algorithm with Alpha-Beta Pruning.")
 
 # Initialize session state
 if 'board' not in st.session_state:
@@ -54,75 +56,97 @@ if 'game_over' not in st.session_state:
 if 'winner' not in st.session_state:
     st.session_state.winner = None
 
-# Check for a winner
+# Check winner and draw
 def check_winner(board, player):
-    win_conditions = [
-        [0,1,2], [3,4,5], [6,7,8], # Rows
-        [0,3,6], [1,4,7], [2,5,8], # Columns
-        [0,4,8], [2,4,6] # Diagonals
-    ]
-    for cond in win_conditions:
-        if board[cond[0]] == board[cond[1]] == board[cond[2]] == player:
-            return True
-    return False
+    win_conditions = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]
+    return any(board[a] == board[b] == board[c] == player for a,b,c in win_conditions)
 
-# Check for draw
 def check_draw(board):
     return " " not in board
 
-# Minimax with Alpha-Beta Pruning
+def get_empty_cells(board):
+    return [i for i in range(9) if board[i] == " "]
+
+# Minimax (Unbeatable)
 def minimax(board, depth, alpha, beta, maximizingPlayer):
-    if check_winner(board, "O"):
-        return 10 - depth
-    if check_winner(board, "X"):
-        return depth - 10
-    if check_draw(board):
-        return 0
-    if maximizingPlayer: # Computer (O)
+    if check_winner(board, "O"): return 10 - depth
+    if check_winner(board, "X"): return depth - 10
+    if check_draw(board): return 0
+
+    if maximizingPlayer:
         max_eval = -math.inf
-        for i in range(9):
-            if board[i] == " ":
-                board[i] = "O"
-                eval_score = minimax(board, depth + 1, alpha, beta, False)
-                board[i] = " "
-                max_eval = max(max_eval, eval_score)
-                alpha = max(alpha, eval_score)
-                if beta <= alpha:
-                    break
+        for i in get_empty_cells(board):
+            board[i] = "O"
+            eval_score = minimax(board, depth + 1, alpha, beta, False)
+            board[i] = " "
+            max_eval = max(max_eval, eval_score)
+            alpha = max(alpha, eval_score)
+            if beta <= alpha: break
         return max_eval
-    else: # Player (X)
+    else:
         min_eval = math.inf
-        for i in range(9):
-            if board[i] == " ":
-                board[i] = "X"
-                eval_score = minimax(board, depth + 1, alpha, beta, True)
-                board[i] = " "
-                min_eval = min(min_eval, eval_score)
-                beta = min(beta, eval_score)
-                if beta <= alpha:
-                    break
+        for i in get_empty_cells(board):
+            board[i] = "X"
+            eval_score = minimax(board, depth + 1, alpha, beta, True)
+            board[i] = " "
+            min_eval = min(min_eval, eval_score)
+            beta = min(beta, eval_score)
+            if beta <= alpha: break
         return min_eval
 
-# Computer's best move
-def computer_move():
+def minimax_move():
     best_score = -math.inf
     best_move = None
-    for i in range(9):
-        if st.session_state.board[i] == " ":
-            st.session_state.board[i] = "O"
-            score = minimax(st.session_state.board, 0, -math.inf, math.inf, False)
-            st.session_state.board[i] = " "
-            if score > best_score:
-                best_score = score
-                best_move = i
-    if best_move is not None:
-        st.session_state.board[best_move] = "O"
+    for i in get_empty_cells(st.session_state.board):
+        st.session_state.board[i] = "O"
+        score = minimax(st.session_state.board, 0, -math.inf, math.inf, False)
+        st.session_state.board[i] = " "
+        if score > best_score:
+            best_score = score
+            best_move = i
+    return best_move
 
-# Player's move
+# Greedy move: win if possible, block if possible, else random
+def greedy_move():
+    board = st.session_state.board
+    # Try to win
+    for i in get_empty_cells(board):
+        board[i] = "O"
+        if check_winner(board, "O"):
+            board[i] = " "
+            return i
+        board[i] = " "
+    # Block player win
+    for i in get_empty_cells(board):
+        board[i] = "X"
+        if check_winner(board, "X"):
+            board[i] = " "
+            return i
+        board[i] = " "
+    # Otherwise random
+    return random.choice(get_empty_cells(board))
+
+# Random move
+def random_move():
+    return random.choice(get_empty_cells(st.session_state.board))
+
+# Computer move based on difficulty
+def computer_move():
+    if difficulty == "Random (Easy)":
+        move = random_move()
+    elif difficulty == "Greedy (Medium)":
+        move = greedy_move()
+    else:  # Minimax (Unbeatable)
+        move = minimax_move()
+    
+    if move is not None:
+        st.session_state.board[move] = "O"
+
+# Player move
 def make_move(pos):
     if st.session_state.board[pos] == " " and not st.session_state.game_over:
         st.session_state.board[pos] = "X"
-       
+        
         if check_winner(st.session_state.board, "X"):
             st.session_state.game_over = True
             st.session_state.winner = "Congratulations! You won! 🎉"
@@ -132,27 +156,25 @@ def make_move(pos):
         else:
             with st.spinner("Computer is thinking... 💭"):
                 computer_move()
-           
+            
             if check_winner(st.session_state.board, "O"):
                 st.session_state.game_over = True
                 st.session_state.winner = "Computer wins! 😢"
             elif check_draw(st.session_state.board):
                 st.session_state.game_over = True
                 st.session_state.winner = "It's a draw! 😐"
-           
+            
             st.rerun()
 
-# Display the board using buttons only (X and O appear directly inside the button)
+# Display board
 cols = st.columns(3)
 for i in range(9):
     with cols[i % 3]:
         cell_value = st.session_state.board[i]
         if cell_value == " " and not st.session_state.game_over:
-            # Empty clickable button
             if st.button(" ", key=f"btn_{i}", use_container_width=True):
                 make_move(i)
         else:
-            # Disabled button showing X or O directly inside it
             st.button(cell_value, key=f"cell_{i}", disabled=True, use_container_width=True)
 
 # Game result
@@ -167,10 +189,14 @@ else:
     st.markdown("---")
     st.caption("Click on any empty cell to make your move.")
 
-# Sidebar
+# Sidebar info
 with st.sidebar:
     st.header("Game Info")
     st.write("- You: **X**")
     st.write("- Computer: **O**")
-    st.write("- Algorithm: Minimax + Alpha-Beta Pruning")
-    st.write("- The computer is **unbeatable**!")
+    st.write(f"- Difficulty: **{difficulty}**")
+    st.markdown("---")
+    st.write("**Algorithms Explained:**")
+    st.write("• **Random**: Picks any empty spot.")
+    st.write("• **Greedy**: Wins if possible, blocks you if possible.")
+    st.write("• **Minimax**: Perfect play – never loses.")
